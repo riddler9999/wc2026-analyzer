@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2026 Bet Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00ff87;
+    --red: #ff3b5c;
+    --yellow: #ffd600;
+    --bg: #060810;
+    --bg2: #0d1117;
+    --bg3: #161b22;
+    --border: #21262d;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-mm: 'Noto Sans Myanmar', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--font-mono); min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(0,255,135,.03) 1px,transparent 1px), linear-gradient(90deg,rgba(0,255,135,.03) 1px,transparent 1px);
+    background-size:40px 40px; pointer-events:none; z-index:0;
+  }
+  .wrap { position:relative; z-index:1; max-width:860px; margin:0 auto; padding:24px 16px 80px; }
+
+  header { display:flex; align-items:flex-end; gap:16px; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .logo-badge { width:52px; height:52px; background:var(--green); display:flex; align-items:center; justify-content:center; font-size:28px; clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); flex-shrink:0; animation:pulse 3s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+  header h1 { font-family:var(--font-display); font-size:2.4rem; letter-spacing:2px; line-height:1; }
+  header h1 span { color:var(--green); }
+  .tagline { font-family:var(--font-mm); font-size:.75rem; color:var(--muted); margin-top:4px; }
+
+  .sec-label { font-size:.65rem; letter-spacing:3px; text-transform:uppercase; color:var(--green); margin-bottom:12px; }
+  .panel { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:24px; margin-bottom:20px; }
+  .glow-line { height:1px; background:linear-gradient(90deg,transparent,var(--green),transparent); margin:20px 0; opacity:.4; }
+
+  /* DATE TABS */
+  .date-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+  .date-tab {
+    padding:8px 14px; border:1px solid var(--border); border-radius:4px;
+    font-family:var(--font-mono); font-size:.72rem; cursor:pointer;
+    color:var(--muted); background:var(--bg3); transition:all .2s; white-space:nowrap;
+  }
+  .date-tab:hover { border-color:var(--green); color:var(--text); }
+  .date-tab.active { border-color:var(--green); color:var(--green); background:rgba(0,255,135,.08); }
+
+  /* FIXTURE LIST */
+  .fixture-list { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .fixture-card {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; background:var(--bg3); border:1px solid var(--border);
+    border-radius:6px; cursor:pointer; transition:all .2s; gap:12px;
+  }
+  .fixture-card:hover { border-color:var(--green); }
+  .fixture-card.selected { border-color:var(--green); background:rgba(0,255,135,.06); }
+  .fixture-teams { font-family:var(--font-mm); font-size:.9rem; flex:1; }
+  .fixture-time { font-size:.65rem; color:var(--muted); white-space:nowrap; }
+  .fixture-check { color:var(--green); font-size:1rem; opacity:0; transition:opacity .2s; }
+  .fixture-card.selected .fixture-check { opacity:1; }
+
+  /* FORM FIELDS */
+  .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:560px){ .field-grid{ grid-template-columns:1fr; } }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field.full { grid-column:1/-1; }
+  label { font-size:.65rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  input, select {
+    background:var(--bg3); border:1px solid var(--border); color:var(--text);
+    font-family:var(--font-mono); font-size:.85rem; padding:10px 12px;
+    border-radius:4px; outline:none; transition:border-color .2s; width:100%; -webkit-appearance:none;
+  }
+  input:focus, select:focus { border-color:var(--green); }
+  select option { background:var(--bg3); }
+
+  /* TOGGLE */
+  .toggle-row { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-size:.75rem; color:var(--muted); margin-bottom:14px; font-family:var(--font-mm); }
+  .toggle-row input[type=checkbox] { display:none; }
+  .toggle-pill { width:36px; height:20px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; position:relative; transition:background .2s; }
+  .toggle-pill::after { content:''; position:absolute; left:3px; top:3px; width:12px; height:12px; background:var(--muted); border-radius:50%; transition:transform .2s, background .2s; }
+  .toggle-row input:checked + .toggle-pill { background:rgba(0,255,135,.15); border-color:var(--green); }
+  .toggle-row input:checked + .toggle-pill::after { transform:translateX(16px); background:var(--green); }
+  #goals-section { display:none; }
+  #goals-section.show { display:block; }
+
+  /* SUBMIT */
+  .submit-btn { width:100%; padding:14px; background:var(--green); color:var(--bg); font-family:var(--font-display); font-size:1.3rem; letter-spacing:3px; border:none; border-radius:4px; cursor:pointer; transition:opacity .2s, transform .1s; margin-top:20px; }
+  .submit-btn:hover { opacity:.9; }
+  .submit-btn:active { transform:scale(.99); }
+  .submit-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+  /* LOADER */
+  #loader { display:none; }
+  .loader-inner { display:flex; flex-direction:column; align-items:center; gap:16px; padding:40px 0; font-family:var(--font-mm); }
+  .spinner { width:48px; height:48px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loader-status { color:var(--green); font-size:.9rem; }
+  .loader-dots span { display:inline-block; animation:blink 1.2s ease-in-out infinite; color:var(--green); }
+  .loader-dots span:nth-child(2){ animation-delay:.2s; }
+  .loader-dots span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+
+  /* REPORT */
+  #report-section { display:none; }
+  .report-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+  .report-title { font-family:var(--font-display); font-size:1.8rem; letter-spacing:2px; }
+  .btn-reset { font-family:var(--font-mono); font-size:.7rem; letter-spacing:2px; text-transform:uppercase; padding:8px 16px; border:1px solid var(--border); background:transparent; color:var(--muted); border-radius:4px; cursor:pointer; transition:border-color .2s, color .2s; }
+  .btn-reset:hover { border-color:var(--text); color:var(--text); }
+  .verdict-card { padding:20px; border-radius:6px; border:1px solid; margin-bottom:16px; font-family:var(--font-mm); }
+  .verdict-card.value { border-color:var(--green); background:rgba(0,255,135,.06); }
+  .verdict-card.novalue { border-color:var(--red); background:rgba(255,59,92,.06); }
+  .verdict-card.marginal { border-color:var(--yellow); background:rgba(255,214,0,.06); }
+  .verdict-label { font-family:var(--font-display); font-size:1.4rem; letter-spacing:2px; margin-bottom:6px; }
+  .verdict-card.value .verdict-label { color:var(--green); }
+  .verdict-card.novalue .verdict-label { color:var(--red); }
+  .verdict-card.marginal .verdict-label { color:var(--yellow); }
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  @media(max-width:480px){ .stats-grid{ grid-template-columns:1fr 1fr; } }
+  .stat-box { background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:12px; }
+  .stat-label { font-size:.6rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .stat-val { font-family:var(--font-display); font-size:1.4rem; letter-spacing:1px; }
+  .stat-val.green { color:var(--green); }
+  .stat-val.red { color:var(--red); }
+  .stat-val.yellow { color:var(--yellow); }
+  .report-text { background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:20px; font-family:var(--font-mm); font-size:.88rem; line-height:1.8; white-space:pre-wrap; word-break:break-word; color:var(--text); margin-bottom:16px; max-height:600px; overflow-y:auto; }
+  .report-text::-webkit-scrollbar { width:4px; }
+  .report-text::-webkit-scrollbar-track { background:var(--bg); }
+  .report-text::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* SKELETON */
+  .skeleton { background:var(--bg3); border:1px solid var(--border); border-radius:6px; height:52px; animation:shimmer 1.5s ease-in-out infinite; }
+  @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.8} }
+
+  /* ERROR */
+  .error-box { background:rgba(255,59,92,.1); border:1px solid var(--red); border-radius:6px; padding:14px 16px; color:var(--red); font-family:var(--font-mm); font-size:.85rem; margin-bottom:16px; display:none; }
+  .error-box.show { display:block; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align:center; padding:40px 0; color:var(--muted); font-family:var(--font-mm); font-size:.85rem; }
+
+  footer { text-align:center; color:var(--muted); font-size:.65rem; letter-spacing:2px; margin-top:40px; padding-top:20px; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo-badge">⚽</div>
+    <div>
+      <h1>WC <span>2026</span> ANALYZER</h1>
+      <div class="tagline">ကမ္ဘာ့ဖလား ပေါက်ကြေး သုံးသပ်ချက် စနစ်</div>
+    </div>
+  </header>
+
+  <!-- FORM SECTION -->
+  <div id="form-section">
+
+    <!-- STEP 1: DATE -->
+    <div class="panel">
+      <div class="sec-label">📅 Step 1 — ပွဲကစားမည့်ရက် ရွေးပါ</div>
+      <div id="date-loading">
+        <div class="skeleton" style="margin-bottom:8px"></div>
+        <div class="skeleton" style="width:60%"></div>
+      </div>
+      <div id="date-tabs" class="date-tabs" style="display:none"></div>
+      <div id="date-error" class="error-box">ပွဲစဉ်ဒေတာ မရပါ — API key စစ်ဆေးပါ</div>
+    </div>
+
+    <!-- STEP 2: FIXTURE -->
+    <div class="panel" id="fixture-panel" style="display:none">
+      <div class="sec-label">⚽ Step 2 — ပွဲစဉ် ရွေးပါ</div>
+      <div id="fixture-list" class="fixture-list"></div>
+    </div>
+
+    <!-- STEP 3: BET -->
+    <div class="panel" id="bet-panel" style="display:none">
+      <div class="sec-label">🎯 Step 3 — ပေါက်ကြေး ထည့်ပါ</div>
+
+      <!-- Selected match display -->
+      <div id="selected-match-display" style="background:rgba(0,255,135,.06);border:1px solid var(--green);border-radius:6px;padding:12px 16px;margin-bottom:20px;font-family:var(--font-mm);font-size:.9rem;color:var(--green);"></div>
+
+      <div class="field-grid">
+        <div class="field">
+          <label>Bet အမျိုးအစား</label>
+          <select id="bet_type">
+            <option value="1X2">1X2 (အနိုင်/သရေ/အရှုံး)</option>
+            <option value="BTTS">BTTS (နှစ်ဖက်ဂိုးပါ)</option>
+            <option value="asian_handicap">Asian Handicap</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ရွေးချယ်မှု</label>
+          <select id="bet_selection">
+            <option value="1">1 — အိမ်ကွင်းအနိုင်</option>
+            <option value="X">X — သရေ</option>
+            <option value="2">2 — ဧည့်ကွင်းအနိုင်</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Odds (ပြားနှုန်း)</label>
+          <input type="number" id="odds" step="0.01" min="1.01" placeholder="ဥပမာ — 3.20" />
+        </div>
+      </div>
+
+      <div class="glow-line"></div>
+
+      <label class="toggle-row" for="goals_toggle">
+        <input type="checkbox" id="goals_toggle" onchange="toggleGoals(this)" />
+        <div class="toggle-pill"></div>
+        <span>ဂိုးပေါင်းပေါက်ကြေး ထပ်ထည့်မည်</span>
+      </label>
+
+      <div id="goals-section">
+        <div class="sec-label">⚽ ဂိုးပေါင်းပေါက်ကြေး</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Over/Under Line</label>
+            <select id="goals_line">
+              <option value="1.5">1.5</option>
+              <option value="2.5" selected>2.5</option>
+              <option value="3.5">3.5</option>
+              <option value="4.5">4.5</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>ရွေးချယ်မှု</label>
+            <select id="goals_selection">
+              <option value="over">Over (ပိုများ)</option>
+              <option value="under">Under (ပိုနည်း)</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Goals Odds</label>
+            <input type="number" id="goals_odds" step="0.01" min="1.01" placeholder="ဥပမာ — 1.85" />
+          </div>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="analyze-btn" onclick="submitAnalysis()">
+        🔍 သုံးသပ်မည်
+      </button>
+    </div>
+
+  </div><!-- /form-section -->
+
+  <!-- LOADER -->
+  <div id="loader">
+    <div class="loader-inner">
+      <div class="spinner"></div>
+      <div class="loader-status" id="loader-status">
+        သုံးသပ်နေသည်<span class="loader-dots"><span>.</span><span>.</span><span>.</span></span>
+      </div>
+      <div style="color:var(--muted);font-size:.7rem;text-align:center;font-family:var(--font-mm)">
+        Poisson model + Backtesting + AI Analysis<br>ခဏစောင့်ပါ (၄၀–၆၀ စက္ကန့်)
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL ERROR -->
+  <div id="global-error" class="error-box"></div>
+
+  <!-- REPORT -->
+  <div id="report-section">
+    <div class="report-header">
+      <div class="report-title">📊 သုံးသပ်ချက် ရလဒ်</div>
+      <button class="btn-reset" onclick="resetForm()">← ပြန်မည်</button>
+    </div>
+    <div id="verdict-area"></div>
+    <div id="stats-area"></div>
+    <div id="report-text-area"></div>
+    <button class="btn-reset" onclick="resetForm()" style="width:100%;padding:12px;margin-top:8px;">← ပွဲစဉ်အသစ် သုံးသပ်မည်</button>
+  </div>
+
+  <footer>WC2026 BET ANALYZER &nbsp;·&nbsp; STATISTICAL REFERENCE ONLY</footer>
+</div>
+
+<script>
+const FDAPI   = 'ca9c6f3527a543b5ac35c6639e39d001';
+const FD_BASE = 'https://api.football-data.org/v4';
+const WEBHOOK_BASE = 'https://n8n.srv1695682.hstgr.cloud/webhook';
+const ANALYZE_URL  = WEBHOOK_BASE + '/wc-analyze';
+const POLL_URL     = WEBHOOK_BASE + '/wc-result';
+
+let allFixtures = [];
+let selectedDate = null;
+let selectedFixture = null;
+let pollTimer = null, msgTimer = null, pollCount = 0;
+
+// ── INIT ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', loadFixtures);
+
+async function loadFixtures() {
+  try {
+    const res = await fetch(FD_BASE + '/competitions/WC/matches?status=SCHEDULED', {
+      headers: { 'X-Auth-Token': FDAPI }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    allFixtures = data.matches || [];
+    buildDateTabs();
+  } catch(e) {
+    document.getElementById('date-loading').style.display = 'none';
+    document.getElementById('date-error').classList.add('show');
+  }
+}
+
+function buildDateTabs() {
+  document.getElementById('date-loading').style.display = 'none';
+  const tabsEl = document.getElementById('date-tabs');
+
+  // Group unique dates
+  const dates = [...new Set(allFixtures.map(m => m.utcDate.slice(0,10)))].sort();
+  if (!dates.length) {
+    tabsEl.innerHTML = '<div style="color:var(--muted);font-family:var(--font-mm);font-size:.85rem">ပွဲစဉ်မရှိသေးပါ</div>';
+    tabsEl.style.display = 'flex';
+    return;
+  }
+
+  dates.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'date-tab';
+    btn.textContent = formatDateMM(d);
+    btn.dataset.date = d;
+    btn.onclick = () => selectDate(d);
+    tabsEl.appendChild(btn);
+  });
+  tabsEl.style.display = 'flex';
+
+  // Auto-select nearest upcoming date
+  const today = new Date().toISOString().slice(0,10);
+  const nearest = dates.find(d => d >= today) || dates[0];
+  selectDate(nearest);
+}
+
+function formatDateMM(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['တနင်္ဂနွေ','တနင်္လာ','အင်္ဂါ','ဗုဒ္ဓဟူး','ကြာသပတေး','သောကြာ','စနေ'];
+  const months = ['ဇန်','ဖေ','မတ်','ဧပြီ','မေ','ဇွန်','ဇူ','ဩ','စက်','အောက်','နို','ဒီ'];
+  return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+}
+
+function selectDate(date) {
+  selectedDate = date;
+  selectedFixture = null;
+
+  // Update tab styles
+  document.querySelectorAll('.date-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.date === date);
+  });
+
+  // Render fixtures for this date
+  const matches = allFixtures.filter(m => m.utcDate.slice(0,10) === date);
+  renderFixtures(matches);
+
+  // Hide bet panel
+  document.getElementById('fixture-panel').style.display = 'block';
+  document.getElementById('bet-panel').style.display = 'none';
+}
+
+function renderFixtures(matches) {
+  const el = document.getElementById('fixture-list');
+  if (!matches.length) {
+    el.innerHTML = '<div class="empty-state">ဒီရက်မှာ ပွဲစဉ်မရှိပါ</div>';
+    return;
+  }
+  el.innerHTML = matches.map(m => {
+    const time = new Date(m.utcDate).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit', timeZone:'Asia/Rangoon'});
+    return `
+      <div class="fixture-card" data-id="${m.id}" onclick="selectFixture(${m.id})">
+        <div class="fixture-teams">${m.homeTeam.name} <span style="color:var(--muted)">vs</span> ${m.awayTeam.name}</div>
+        <div class="fixture-time">${time} MMT</div>
+        <div class="fixture-check">✓</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectFixture(matchId) {
+  selectedFixture = allFixtures.find(m => m.id === matchId);
+  if (!selectedFixture) return;
+
+  // Update card styles
+  document.querySelectorAll('.fixture-card').forEach(c => {
+    c.classList.toggle('selected', parseInt(c.dataset.id) === matchId);
+  });
+
+  // Show bet panel
+  const display = document.getElementById('selected-match-display');
+  display.textContent = '⚽ ' + selectedFixture.homeTeam.name + ' vs ' + selectedFixture.awayTeam.name;
+  document.getElementById('bet-panel').style.display = 'block';
+  document.getElementById('bet-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── BET FORM ──────────────────────────────────────────
+function toggleGoals(el) {
+  document.getElementById('goals-section').classList.toggle('show', el.checked);
+}
+
+function showGlobalError(msg) {
+  const el = document.getElementById('global-error');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 7000);
+}
+
+async function submitAnalysis() {
+  if (!selectedFixture) { showGlobalError('⚠️ ပွဲစဉ်တစ်ပွဲ ရွေးပါ'); return; }
+  const odds = parseFloat(document.getElementById('odds').value);
+  if (!odds || odds < 1.01) { showGlobalError('⚠️ Odds ဖြည့်ပါ'); return; }
+
+  const betType = document.getElementById('bet_type').value;
+  const betSel  = document.getElementById('bet_selection').value;
+  const goalsOn = document.getElementById('goals_toggle').checked;
+  const matchDate = selectedFixture.utcDate.slice(0,10);
+
+  const payload = {
+    match:        selectedFixture.homeTeam.name + ' vs ' + selectedFixture.awayTeam.name,
+    team_home:    selectedFixture.homeTeam.name,
+    team_home_id: String(selectedFixture.homeTeam.id),
+    team_away:    selectedFixture.awayTeam.name,
+    team_away_id: String(selectedFixture.awayTeam.id),
+    match_date:   matchDate,
+    bet_type:     betType,
+    bet_selection:betSel,
+    odds
+  };
+
+  if (goalsOn) {
+    payload.goals_market_type = 'over_under';
+    payload.goals_line        = parseFloat(document.getElementById('goals_line').value);
+    payload.goals_selection   = document.getElementById('goals_selection').value;
+    payload.goals_odds        = parseFloat(document.getElementById('goals_odds').value) || null;
+  }
+
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('loader').style.display = 'block';
+  setLoaderStatus('Webhook ချိတ်ဆက်နေသည်...');
+
+  try {
+    const res = await fetch(ANALYZE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Webhook error: ' + res.status);
+    const data = await res.json();
+    if (!data.job_id) throw new Error('Job ID မရပါ');
+    setLoaderStatus('Analysis စတင်နေသည်...');
+    startPolling(data.job_id);
+  } catch(e) {
+    document.getElementById('form-section').style.display = 'block';
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('analyze-btn').disabled = false;
+    showGlobalError('❌ ' + e.message);
+  }
+}
+
+// ── POLLING ───────────────────────────────────────────
+const loaderMsgs = [
+  'Trend data ဆွဲယူနေသည်...','H2H မှတ်တမ်း စစ်ဆေးနေသည်...',
+  'Poisson model တွက်နေသည်...','Backtesting လုပ်နေသည်...',
+  'AI သုံးသပ်နေသည်...','Report ပြင်ဆင်နေသည်...'
+];
+let msgIdx = 0;
+
+function setLoaderStatus(msg) {
+  document.getElementById('loader-status').innerHTML =
+    msg + '<span class="loader-dots"><span>.</span><span>.</span><span>.</span></span>';
+}
+
+function startPolling(jobId) {
+  pollCount = 0; msgIdx = 0;
+  msgTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % loaderMsgs.length;
+    setLoaderStatus(loaderMsgs[msgIdx]);
+  }, 6000);
+
+  pollTimer = setInterval(async () => {
+    pollCount++;
+    if (pollCount > 25) {
+      clearInterval(pollTimer); clearInterval(msgTimer);
+      document.getElementById('form-section').style.display = 'block';
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('analyze-btn').disabled = false;
+      showGlobalError('⏱ Timeout — Server မှ response မလာပါ။ ကြိုးစားပြန်ပါ။');
+      return;
+    }
+    try {
+      const res = await fetch(POLL_URL + '?job_id=' + encodeURIComponent(jobId));
+      const data = await res.json();
+      if (data.status === 'complete' && data.report) {
+        clearInterval(pollTimer); clearInterval(msgTimer);
+        renderReport(data.report);
+      }
+    } catch(e) { /* retry silently */ }
+  }, 3000);
+}
+
+// ── REPORT RENDER ─────────────────────────────────────
+function renderReport(reportText) {
+  function extract(pattern, fallback) {
+    const m = reportText.match(pattern);
+    return m ? m[1] : fallback;
+  }
+
+  let verdictClass = 'marginal', verdictLabel = '⚠️ နောက်ဆုံးဆုံးဖြတ်ရန်';
+  if (reportText.includes('✅ တန်ဖိုးရှိ')) { verdictClass = 'value';   verdictLabel = '✅ တန်ဖိုးရှိ — ထည့်သုံးနိုင်'; }
+  if (reportText.includes('❌ တန်ဖိုးမရှိ')) { verdictClass = 'novalue'; verdictLabel = '❌ တန်ဖိုးမရှိ — ရှောင်ပါ'; }
+
+  const modelProb   = extract(/ကိုယ်တိုင်ခန့်မှန်းနိုင်ခြေ\s*—\s*([\d.]+)%/, '—');
+  const impliedProb = extract(/odds မှ ဆိုလိုနိုင်ခြေ\s*—\s*([\d.]+)%/, '—');
+  const edge        = extract(/ကွာဟချက်\s*—\s*([+-]?[\d.]+)%/, '—');
+  const roi         = extract(/ROI ([-\d.]+)%/, '—');
+  const btHit       = extract(/(\d+\/\d+) \([\d.]+%\)/, '—');
+
+  const edgeNum = parseFloat(edge);
+  const roiNum  = parseFloat(roi);
+
+  document.getElementById('verdict-area').innerHTML = `
+    <div class="verdict-card ${verdictClass}">
+      <div class="verdict-label">${verdictLabel}</div>
+      <div style="font-size:.8rem;color:var(--muted);font-family:var(--font-mm)">
+        Statistical model + AI analysis အပေါ် အခြေခံ၍ သုံးသပ်ချက်
+      </div>
+    </div>`;
+
+  document.getElementById('stats-area').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-label">Model Prob</div><div class="stat-val">${modelProb}%</div></div>
+      <div class="stat-box"><div class="stat-label">Implied Prob</div><div class="stat-val">${impliedProb}%</div></div>
+      <div class="stat-box"><div class="stat-label">Edge</div><div class="stat-val ${edgeNum>0?'green':edgeNum<0?'red':'yellow'}">${edge}%</div></div>
+      <div class="stat-box"><div class="stat-label">Backtest</div><div class="stat-val">${btHit}</div></div>
+      <div class="stat-box"><div class="stat-label">ROI</div><div class="stat-val ${roiNum>0?'green':roiNum<0?'red':'yellow'}">${roi}%</div></div>
+    </div>`;
+
+  document.getElementById('report-text-area').innerHTML =
+    `<div class="report-text">${escapeHtml(reportText)}</div>`;
+
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('report-section').style.display = 'block';
+  document.getElementById('analyze-btn').disabled = false;
+  window.scrollTo(0,0);
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function resetForm() {
+  clearInterval(pollTimer); clearInterval(msgTimer);
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('report-section').style.display = 'none';
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('verdict-area').innerHTML = '';
+  document.getElementById('stats-area').innerHTML = '';
+  document.getElementById('report-text-area').innerHTML = '';
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
