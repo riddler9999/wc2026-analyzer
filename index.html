@@ -280,10 +280,11 @@
 </div>
 
 <script>
-const FDAPI   = 'ca9c6f3527a543b5ac35c6639e39d001';
-const FD_BASE = 'https://api.football-data.org/v4';
+
+
 const WEBHOOK_BASE = 'https://n8n.srv1695682.hstgr.cloud/webhook';
-const ANALYZE_URL  = WEBHOOK_BASE + '/wc-analyze';
+const FIXTURES_URL = WEBHOOK_BASE + '/wc-fixtures';
+  const ANALYZE_URL  = WEBHOOK_BASE + '/wc-analyze';
 const POLL_URL     = WEBHOOK_BASE + '/wc-result';
 
 let allFixtures = [];
@@ -296,9 +297,7 @@ window.addEventListener('DOMContentLoaded', loadFixtures);
 
 async function loadFixtures() {
   try {
-    const res = await fetch(FD_BASE + '/competitions/WC/matches?status=SCHEDULED', {
-      headers: { 'X-Auth-Token': FDAPI }
-    });
+    const res = await fetch(FIXTURES_URL);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     allFixtures = data.matches || [];
