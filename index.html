@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WC 2026 Bet Analyzer</title>
+<title>WC 2026 Match Predictor</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+Myanmar:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -152,8 +152,8 @@
   <header>
     <div class="logo-badge">⚽</div>
     <div>
-      <h1>WC <span>2026</span> ANALYZER</h1>
-      <div class="tagline">ကမ္ဘာ့ဖလား ပေါက်ကြေး သုံးသပ်ချက် စနစ်</div>
+      <h1>WC <span>2026</span> PREDICTOR</h1>
+      <div class="tagline">ကမ္ဘာ့ဖလား ပွဲစဉ် ဒေတာ ခန့်မှန်းချက် စနစ်</div>
     </div>
   </header>
 
@@ -179,14 +179,14 @@
 
     <!-- STEP 3: BET -->
     <div class="panel" id="bet-panel" style="display:none">
-      <div class="sec-label">🎯 Step 3 — ပေါက်ကြေး ထည့်ပါ</div>
+      <div class="sec-label">🎯 Step 3 — ခန့်မှန်းဒေတာ ထည့်ပါ</div>
 
       <!-- Selected match display -->
       <div id="selected-match-display" style="background:rgba(0,255,135,.06);border:1px solid var(--green);border-radius:6px;padding:12px 16px;margin-bottom:20px;font-family:var(--font-mm);font-size:.9rem;color:var(--green);"></div>
 
       <div class="field-grid">
         <div class="field">
-          <label>Bet အမျိုးအစား</label>
+          <label>ကစားနည်း အမျိုးအစား</label>
           <select id="bet_type">
             <option value="1X2">1X2 (အနိုင်/သရေ/အရှုံး)</option>
             <option value="BTTS">BTTS (နှစ်ဖက်ဂိုးပါ)</option>
@@ -202,7 +202,7 @@
           </select>
         </div>
         <div class="field full">
-          <label>Odds (ပြားနှုန်း)</label>
+          <label>Win Rate (%)</label>
           <input type="number" id="odds" step="0.01" min="1.01" placeholder="ဥပမာ — 3.20" />
         </div>
       </div>
@@ -212,11 +212,11 @@
       <label class="toggle-row" for="goals_toggle">
         <input type="checkbox" id="goals_toggle" onchange="toggleGoals(this)" />
         <div class="toggle-pill"></div>
-        <span>ဂိုးပေါင်းပေါက်ကြေး ထပ်ထည့်မည်</span>
+        <span>ဂိုးပေါင်း ခန့်မှန်းချက် ထပ်ထည့်မည်</span>
       </label>
 
       <div id="goals-section">
-        <div class="sec-label">⚽ ဂိုးပေါင်းပေါက်ကြေး</div>
+        <div class="sec-label">⚽ ဂိုးပေါင်း ခန့်မှန်းချက်</div>
         <div class="field-grid">
           <div class="field">
             <label>Over/Under Line</label>
@@ -235,7 +235,7 @@
             </select>
           </div>
           <div class="field full">
-            <label>Goals Odds</label>
+            <label>Goals Rate</label>
             <input type="number" id="goals_odds" step="0.01" min="1.01" placeholder="ဥပမာ — 1.85" />
           </div>
         </div>
@@ -276,7 +276,7 @@
     <button class="btn-reset" onclick="resetForm()" style="width:100%;padding:12px;margin-top:8px;">← ပွဲစဉ်အသစ် သုံးသပ်မည်</button>
   </div>
 
-  <footer>WC2026 BET ANALYZER &nbsp;·&nbsp; STATISTICAL REFERENCE ONLY</footer>
+  <footer>WC2026 MATCH PREDICTOR &nbsp;·&nbsp; STATISTICAL REFERENCE ONLY</footer>
 </div>
 
 <script>
@@ -402,7 +402,7 @@ function showGlobalError(msg) {
 async function submitAnalysis() {
   if (!selectedFixture) { showGlobalError('⚠️ ပွဲစဉ်တစ်ပွဲ ရွေးပါ'); return; }
   const odds = parseFloat(document.getElementById('odds').value);
-  if (!odds || odds < 1.01) { showGlobalError('⚠️ Odds ဖြည့်ပါ'); return; }
+  if (!odds || odds < 1.01) { showGlobalError('⚠️ Win Rate ဖြည့်ပါ'); return; }
 
   const betType = document.getElementById('bet_type').value;
   const betSel  = document.getElementById('bet_selection').value;
@@ -465,11 +465,11 @@ function renderReport(r) {
   var isHighRisk = r.risk_level === 'high';
   var edge       = typeof r.edge === 'number' ? r.edge : 0;
 
-  var verdictClass = 'marginal', verdictLabel = '⚠️ နောဆုန် ဆုံဖြေတ်ရန်';
-  if (isValue && !isHighRisk)  { verdictClass = 'value';   verdictLabel = '✅ တန်ဖိုရှိ — ထည့သုံးနိုင်'; }
-  if (!isValue && !isHighRisk) { verdictClass = 'novalue'; verdictLabel = '❌ တန်ဖိုမရှိ — ရှောင်ပါ'; }
-  if (!isValue && isHighRisk)  { verdictClass = 'novalue'; verdictLabel = '❌ တန်ဖိုမရှိ — ရှောင်ပါ'; }
-  if (isValue && isHighRisk)   { verdictClass = 'marginal'; verdictLabel = '⚠️ Marginal — ဂရုတစိုက်'; }
+  var verdictClass = 'marginal', verdictLabel = '⚠️ ဆက်လက် စစ်ဆေးရန်';
+  if (isValue && !isHighRisk)  { verdictClass = 'value';   verdictLabel = '✅ ခန့်မှန်းချက် ကောင်း — ဝင်ရောက်ကြည့်နိုင်'; }
+  if (!isValue && !isHighRisk) { verdictClass = 'novalue'; verdictLabel = '❌ ခန့်မှန်းချက် ညံ့ — ဂရုပြုပါ'; }
+  if (!isValue && isHighRisk)  { verdictClass = 'novalue'; verdictLabel = '❌ ခန့်မှန်းချက် ညံ့ — ဂရုပြုပါ'; }
+  if (isValue && isHighRisk)   { verdictClass = 'marginal'; verdictLabel = '⚠️ Marginal — ဒေတာနည်း'; }
 
   var modelProb   = typeof r.model_prob   === 'number' ? r.model_prob.toFixed(1)   : '—';
   var impliedProb = typeof r.implied_prob === 'number' ? r.implied_prob.toFixed(1) : '—';
@@ -480,7 +480,7 @@ function renderReport(r) {
   var wp    = r.win_probability || {};
   var homeP = (wp.home || 0).toFixed(1);
   var drawP = (wp.draw || 0).toFixed(1);
-  var betLabels = { home_win: 'အိမ်ကြင်းအနိုင်', draw: 'သရေ', away_win: 'ဧည့ကြင်းအနိုင်', no_bet: 'မထည့သင့့' };
+  var betLabels = { home_win: 'အိမ်ကြင်းအနိုင်', draw: 'သရေ', away_win: 'ဧည့ကြင်းအနိုင်', no_bet: 'ညွှန်ကြားချက်မရှိ' };
   var betLabel  = betLabels[r.recommended_bet] || r.recommended_bet || 'no_bet';
   var confColor = {low:'red', medium:'yellow', high:'green'}[r.confidence] || 'yellow';
   var factors   = '';
@@ -494,7 +494,7 @@ function renderReport(r) {
     '<div class="verdict-card ' + verdictClass + '">'
     + '<div class="verdict-label">' + verdictLabel + '</div>'
     + '<div style="font-size:.85rem;margin-top:8px;font-family:var(--font-mm)">'
-    + '<strong>အကြံပြူချက်:</strong> ' + betLabel
+    + '<strong>ညွှန်ကြားချက်:</strong> ' + betLabel
     + ' &middot; <strong style="color:var(--' + confColor + ')">Confidence: ' + (r.confidence || 'low') + '</strong>'
     + '</div>'
     + (r.avoid_reason ? '<div style="margin-top:8px;font-size:.78rem;color:var(--red)">⚠️ ' + escapeHtml(String(r.avoid_reason)) + '</div>' : '')
@@ -538,3 +538,4 @@ function resetForm() {
 </script>
 </body>
 </html>
+
